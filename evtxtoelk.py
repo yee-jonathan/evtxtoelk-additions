@@ -11,6 +11,7 @@ from Evtx.Views import evtx_file_xml_view
 from elasticsearch import Elasticsearch, helpers
 import xmltodict
 import sys
+import os
 
 
 class EvtxToElk:
@@ -26,6 +27,7 @@ class EvtxToElk:
     @staticmethod
     def evtx_to_elk(filename, elk_ip, elk_index="hostlogs", bulk_queue_len_threshold=500, metadata={}):
         bulk_queue = []
+        event_count = 0
         es = Elasticsearch([elk_ip])
         with open(filename) as infile:
             with contextlib.closing(mmap.mmap(infile.fileno(), 0, access=mmap.ACCESS_READ)) as buf:
@@ -95,7 +97,6 @@ class EvtxToElk:
                         #bulk_queue.append(event_record)
                         event_data = json.loads(json.dumps(log_line))
                         event_data["_index"] = elk_index
-                        event_data["_type"] = elk_index
                         event_data["meta"] = metadata
                         bulk_queue.append(event_data)
 
@@ -107,9 +108,11 @@ class EvtxToElk:
                         #})
 
                         if len(bulk_queue) == bulk_queue_len_threshold:
-                            print('Bulkingrecords to ES: ' + str(len(bulk_queue)))
+                            print('Bulking records to ES: ' + str(len(bulk_queue)))
+                            
                             # start parallel bulking to ElasticSearch, default 500 chunks;
                             if EvtxToElk.bulk_to_elasticsearch(es, bulk_queue):
+                                event_count += len(bulk_queue)
                                 bulk_queue = []
                             else:
                                 print('Failed to bulk data to Elasticsearch')
@@ -126,6 +129,8 @@ class EvtxToElk:
                 if len(bulk_queue) > 0:
                     print('Bulking final set of records to ES: ' + str(len(bulk_queue)))
                     if EvtxToElk.bulk_to_elasticsearch(es, bulk_queue):
+                        event_count += len(bulk_queue)
+                        print('Number of events: ' + str(event_count))
                         bulk_queue = []
                     else:
                         print('Failed to bulk data to Elasticsearch')
@@ -136,11 +141,24 @@ if __name__ == "__main__":
     # Create argument parser
     parser = argparse.ArgumentParser()
     # Add arguments
-    parser.add_argument('evtxfile', help="Evtx file to parse")
-    parser.add_argument('elk_ip', default="localhost", help="IP (and port) of ELK instance")
+    parser.add_argument('elk_ip', nargs='?', default="http://localhost:9200", help="IP (and port) of ELK instance")
     parser.add_argument('-i', default="hostlogs", help="ELK index to load data into")
-    parser.add_argument('-s', default=500, help="Size of queue")
+    parser.add_argument('-s', default=1000, help="Size of queue")
     parser.add_argument('-meta', default={}, type=json.loads, help="Metadata to add to records")
+    #Adds option to choose individual file or path to directory of evtx files
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('-dir', help="Path to directory with evtx files")
+    group.add_argument('-file', help="EVTX file to process")
     # Parse arguments and call evtx to elk class
     args = parser.parse_args()
-    EvtxToElk.evtx_to_elk(args.evtxfile, args.elk_ip, elk_index=args.i, bulk_queue_len_threshold=int(args.s), metadata=args.meta)
+    #checks for -file or -path selection
+    if args.dir is not None:
+        evtxfile = [os.path.join(args.dir,f) for f in os.listdir(args.dir) if f.endswith('.evtx')]
+    else:
+        if args.file.endswith('.evtx'):
+            evtxfile = [args.file]
+        else:
+            raise Exception("Selected file is not an EVTX file")
+    for i in evtxfile:
+        #breakpoint()
+        EvtxToElk.evtx_to_elk(i, args.elk_ip, elk_index=args.i, bulk_queue_len_threshold=int(args.s), metadata=args.meta)
