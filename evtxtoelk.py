@@ -91,7 +91,6 @@ class EvtxToElk:
                         #event_record = json.loads(json.dumps(log_line))
                         #event_record.update({
                         #    "_index": elk_index,
-                        #    "_type": elk_index,
                         #    "metadata": metadata
                         #})
                         #bulk_queue.append(event_record)
@@ -102,7 +101,6 @@ class EvtxToElk:
 
                         #bulk_queue.append({
                         #    "_index": elk_index,
-                        #    "_type": elk_index,
                         #    "body": json.loads(json.dumps(log_line)),
                         #    "metadata": metadata
                         #})
@@ -138,19 +136,24 @@ class EvtxToElk:
 
 
 if __name__ == "__main__":
+
     # Create argument parser
     parser = argparse.ArgumentParser()
+
     # Add arguments
     parser.add_argument('elk_ip', nargs='?', default="http://localhost:9200", help="IP (and port) of ELK instance")
     parser.add_argument('-i', default="hostlogs", help="ELK index to load data into")
     parser.add_argument('-s', default=1000, help="Size of queue")
     parser.add_argument('-meta', default={}, type=json.loads, help="Metadata to add to records")
+
     #Adds option to choose individual file or path to directory of evtx files
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('-dir', help="Path to directory with evtx files")
     group.add_argument('-file', help="EVTX file to process")
+
     # Parse arguments and call evtx to elk class
     args = parser.parse_args()
+
     #checks for -file or -path selection
     if args.dir is not None:
         evtxfile = [os.path.join(args.dir,f) for f in os.listdir(args.dir) if f.endswith('.evtx')]
@@ -160,5 +163,4 @@ if __name__ == "__main__":
         else:
             raise Exception("Selected file is not an EVTX file")
     for i in evtxfile:
-        #breakpoint()
         EvtxToElk.evtx_to_elk(i, args.elk_ip, elk_index=args.i, bulk_queue_len_threshold=int(args.s), metadata=args.meta)
