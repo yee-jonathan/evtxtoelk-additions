@@ -10,22 +10,22 @@ A variation of Dan Gunther's evtxtoelk python script
 
 ## Installation
 1. Clone this repo
-2. Create a virtual environment (optional but recommended)
+2. Create a virtual environment (optional but recommended) \
 `python3 -m venv .venv`
-3. Install requirements
+3. Install requirements \
 `pip install -r requirements.txt`
 
 ## Flags
-`-dir` specifies path to directory holding evtx files. This is non-recursive and cannot be used concurrently with `-file`
-`-file` specifies a single file for parsing. Cannot be used concurrently with `-dir`
-`-i` specifies elasticsearch index to export to. The default index is `hostlogs`
-`-s` specifies size of queue 
-`-meta` adds custom metadata if desired
+`-dir` specifies path to directory holding evtx files. This is non-recursive and cannot be used concurrently with `-file` \
+`-file` specifies a single file for parsing. Cannot be used concurrently with `-dir` \
+`-i` specifies elasticsearch index to export to. The default index is `hostlogs` \
+`-s` specifies size of queue \
+`-meta` adds custom metadata if desired \
 
 ## Usage Examples
 
-Parsing a single evtx file and export to local elasticsearch with default index
-`python3 evtxtoelk.py -file /path/to/file.evtx` or `python3 evtxtoelk.py -file /path/to/file.evtx http://localhost:9200`
+Parsing a single evtx file and export to local elasticsearch with default index \
+`python3 evtxtoelk.py -file /path/to/file.evtx` or `python3 evtxtoelk.py -file /path/to/file.evtx http://localhost:9200` \
 
-Parsing a directory filled with evtx files and exporting to remote elasticsearch with custom index name
-`python3 evtxtoelk.py -dir /path/to/directory/of/evtx/files -i custom_index http://someremotehost:9200`
+Parsing a directory filled with evtx files and exporting to remote elasticsearch with custom index name \
+`python3 evtxtoelk.py -dir /path/to/directory/of/evtx/files -i custom_index http://someremotehost:9200` \
